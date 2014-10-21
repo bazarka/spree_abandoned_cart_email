@@ -5,7 +5,17 @@ Spree::Order.class_eval do
   preference :abandedon_email_timeframe, 6.hours
 
   def self.email_eligible_abandoned_email_orders
-    eligible_abandoned_email_orders.each {|o| o.send_abandoned_email }
+    eligible_abandoned_email_orders.each do |order|
+      if order.abandoned_count_email < 3
+        count = order.abandoned_count_email+1
+        order.update(abandoned_count_email: count)
+        order.send_abandoned_email
+      elsif order.abandoned_count_email == 3
+        count = order.abandoned_count_email+1
+        order.update(abandoned_count_email: count)
+        order.send_abandoned_email
+      end
+    end
   end
 
   def self.eligible_abandoned_email_orders
@@ -20,9 +30,9 @@ Spree::Order.class_eval do
   end
 
   def send_abandoned_email
+
     # Don't send anything if the order has no line items.
     return if line_items.empty?
-
     Spree::AbandonedCartMailer.abandoned_email(self).deliver
     mark_abandoned_email_as_sent
   end
